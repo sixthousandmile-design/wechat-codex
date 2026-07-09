@@ -69,6 +69,21 @@ def test_status_is_sender_scoped(tmp_path: Path) -> None:
     assert "not visible" in status.reply_text
 
 
+def test_status_accepts_trailing_chat_punctuation(tmp_path: Path) -> None:
+    store = make_store(tmp_path)
+    result = handle_message(store, make_message("ask hello"), max_reply_chars=500)
+    assert result.job_id is not None
+    completed = store.complete_job(result.job_id, "succeeded", "hello from codex")
+    assert completed is not None
+
+    status = handle_message(
+        store,
+        make_message(f"status {result.job_id}.", message_id="m2"),
+        max_reply_chars=500,
+    )
+    assert "hello from codex" in status.reply_text
+
+
 def test_claim_and_complete_job(tmp_path: Path) -> None:
     store = make_store(tmp_path)
     result = handle_message(store, make_message("ask hello"), max_reply_chars=500)

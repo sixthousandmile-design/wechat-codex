@@ -15,6 +15,12 @@ def _split_command(text: str) -> tuple[str, str]:
     return command, rest
 
 
+def _first_token_without_chat_punctuation(text: str) -> str:
+    if not text:
+        return ""
+    return text.split()[0].strip(".,;:!?，。；：！？")
+
+
 def handle_message(store: JobStore, message: InboundMessage, max_reply_chars: int) -> CommandResult:
     command, rest = _split_command(message.text)
 
@@ -52,7 +58,7 @@ def handle_message(store: JobStore, message: InboundMessage, max_reply_chars: in
         )
 
     if command == "approve" and rest:
-        job_id = rest.split()[0]
+        job_id = _first_token_without_chat_punctuation(rest)
         ok, reason, job = store.approve_job(job_id, message.platform, message.sender)
         if ok and reason == "approved":
             return CommandResult(f"Approved {job_id}; queued for local Codex worker.", job_id)
@@ -66,7 +72,7 @@ def handle_message(store: JobStore, message: InboundMessage, max_reply_chars: in
         return CommandResult(f"Job {job_id} cannot be approved from state: {state}.", job_id)
 
     if command == "status" and rest:
-        job_id = rest.split()[0]
+        job_id = _first_token_without_chat_punctuation(rest)
         job = store.get_job(job_id)
         if job is None:
             return CommandResult(f"Job {job_id} was not found.")
