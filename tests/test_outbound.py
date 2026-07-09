@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from codex_messenger.config import RelaySettings
-from codex_messenger.outbound import get_wechat_access_token
+from codex_messenger.outbound import get_wechat_access_token, get_wechat_diagnostics
 
 
 def relay_settings(**overrides) -> RelaySettings:
@@ -36,3 +36,12 @@ def test_manual_wechat_access_token_is_used() -> None:
 def test_missing_wechat_credentials_returns_empty_token() -> None:
     token = asyncio.run(get_wechat_access_token(relay_settings()))
     assert token == ""
+
+
+def test_wechat_diagnostics_show_configured_state() -> None:
+    diagnostics = get_wechat_diagnostics(
+        relay_settings(wechat_app_id="app-id", wechat_app_secret="secret")
+    )
+    assert diagnostics["configured"] is True
+    assert diagnostics["has_app_id"] is True
+    assert diagnostics["has_app_secret"] is True

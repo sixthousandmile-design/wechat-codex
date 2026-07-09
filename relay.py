@@ -10,7 +10,13 @@ from pydantic import BaseModel
 from codex_messenger.commands import handle_message
 from codex_messenger.config import RelaySettings, load_relay_settings
 from codex_messenger.models import InboundMessage
-from codex_messenger.outbound import send_platform_reply, send_whatsapp_reply
+from codex_messenger.outbound import (
+    get_wechat_access_token,
+    get_wechat_diagnostics,
+    send_platform_reply,
+    send_wechat_custom_reply,
+    send_whatsapp_reply,
+)
 from codex_messenger.platforms import (
     build_wechat_text_reply,
     parse_wechat_message,
@@ -35,6 +41,11 @@ class CompletionPayload(BaseModel):
     stdout: str = ""
     stderr: str = ""
     log_path: str = ""
+
+
+class WeChatTestSendPayload(BaseModel):
+    openid: str
+    text: str = "WeChat async reply test from relay."
 
 
 def require_worker(
@@ -164,6 +175,19 @@ def get_worker_job(job_id: str) -> dict:
     return store.as_public_job(job)
 
 
+@app.get("/worker/wechat/diagnostics", dependencies=[Depends(require_worker)])
+async def get_worker_wechat_diagnostics() -> dict[str, object]:
+    await get_wechat_access_token(settings)
+    return get_wechat_diagnostics(settings)
+
+
+@app.post("/worker/wechat/test-send", dependencies=[Depends(require_worker)])
+async def test_worker_wechat_send(payload: WeChatTestSendPayload) -> dict[str, object]:
+    sent = await send_wechat_custom_reply(settings, payload.openid, payload.text)
+    diagnostics = get_wechat_diagnostics(settings)
+    return {"sent": sent, "diagnostics": diagnostics}
+
+
 @app.post("/worker/jobs/{job_id}/complete", dependencies=[Depends(require_worker)])
 async def complete_worker_job(job_id: str, payload: CompletionPayload) -> dict:
     job = store.complete_job(
@@ -182,5 +206,6 @@ async def complete_worker_job(job_id: str, payload: CompletionPayload) -> dict:
         reply = f"{job_id} succeeded.\n{payload.result}"
     else:
         reply = f"{job_id} failed.\n{payload.error or payload.result}"
-    await send_platform_reply(settings, job, reply)
+    reply_sent = await send_platform_reply(settings, job, reply)
+    logger.info("Completion reply for %s sent=%s platform=%s", job_id, reply_sent, job["platform"])
     return store.as_public_job(job)
