@@ -68,6 +68,20 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/health/config")
+def health_config() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "db_path": settings.db_path,
+        "worker_token_configured": bool(settings.worker_token),
+        "wechat_token_configured": bool(settings.wechat_token),
+        "wechat_async_reply_configured": bool(
+            settings.wechat_access_token or (settings.wechat_app_id and settings.wechat_app_secret)
+        ),
+        "allowed_senders_configured": bool(settings.allowed_senders),
+    }
+
+
 @app.get("/webhook/whatsapp")
 def verify_whatsapp_webhook(
     hub_mode: Annotated[str | None, Query(alias="hub.mode")] = None,

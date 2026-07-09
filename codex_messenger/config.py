@@ -48,6 +48,9 @@ class RelaySettings:
     whatsapp_graph_api_base: str
     wechat_token: str
     wechat_access_token: str
+    wechat_app_id: str
+    wechat_app_secret: str
+    wechat_api_base: str
 
     def is_sender_allowed(self, platform: str, sender: str) -> bool:
         if not self.allowed_senders:
@@ -87,6 +90,9 @@ def load_relay_settings() -> RelaySettings:
         ).rstrip("/"),
         wechat_token=os.getenv("WECHAT_TOKEN", ""),
         wechat_access_token=os.getenv("WECHAT_ACCESS_TOKEN", ""),
+        wechat_app_id=os.getenv("WECHAT_APP_ID", ""),
+        wechat_app_secret=os.getenv("WECHAT_APP_SECRET", ""),
+        wechat_api_base=os.getenv("WECHAT_API_BASE", "https://api.weixin.qq.com").rstrip("/"),
     )
 
 

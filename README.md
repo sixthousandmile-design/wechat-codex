@@ -57,3 +57,34 @@ CODEX_COMMAND=C:\Users\xinleiy\.vscode\extensions\openai.chatgpt-26.623.141536-w
 - `status <job_id>`: get status and latest result
 
 The worker never uses `danger-full-access`. Mutating work only runs after `approve <job_id>`.
+
+## 5. Render Persistence
+
+Render free web services can restart with an empty local filesystem. If `RELAY_DB_PATH`
+is just `relay.sqlite3`, old job IDs may disappear after redeploy or sleep/wake.
+For durable status history, attach a persistent disk and set:
+
+```text
+RELAY_DB_PATH=/var/data/relay.sqlite3
+```
+
+Then redeploy the service.
+
+## 6. WeChat Automatic Completion Replies
+
+Immediate WeChat replies work through the message-push webhook. To push the final
+Codex result automatically after the worker completes, configure either:
+
+```text
+WECHAT_APP_ID=<test-or-official-account-appid>
+WECHAT_APP_SECRET=<test-or-official-account-secret>
+```
+
+or a temporary manual token:
+
+```text
+WECHAT_ACCESS_TOKEN=<temporary-access-token>
+```
+
+The app id/secret option is preferred because the relay refreshes `access_token`
+automatically.
